@@ -59,7 +59,7 @@ Navigate to the repository root directory and run it from a PowerShell terminal.
 ```powershell
 cd path/to/your/project
 
-.\List-AzDevOpsEnvironmentsAndApprovers.ps1 -PAT "YOUR_PERSONAL_ACCESS_TOKEN" -Organization "YourAzDOOrganization"
+.\List-AzDevOpsEnvironmentsAndApprovers.ps1 -PAT "YOUR_PERSONAL_ACCESS_TOKEN" -Organization "YourAzDOOrganization" -ProjectName "YourProjectName"
 ```
 
 ### Script Parameters:
@@ -72,11 +72,16 @@ cd path/to/your/project
     *   Your Azure DevOps organization name. (E.g., if your URL is `https://dev.azure.com/MyCompany`, the name is `MyCompany`).
     *   Example: `"MyOrganization"`
 
+*   **`-ProjectName`** (Required):
+    *   The name of the Azure DevOps project to analyze.
+    *   This must be the exact project name as it appears in Azure DevOps.
+    *   Example: `"MyProject"`
+
 *   **`-CsvFileName`** (Optional):
     *   Custom name for the output CSV file.
     *   **Important**: Provide only the filename (e.g., `environments_report.csv`), not the full path. The script will automatically save it in the `reports/` folder.
     *   If not specified, the file will be named `AzureDevOpsEnvironments_YYYYMMDD_HHMMSS.csv`.
-    *   Example: `.\List-AzDevOpsEnvironmentsAndApprovers.ps1 -PAT "..." -Organization "..." -CsvFileName "tech_environments_q3.csv"`
+    *   Example: `.\List-AzDevOpsEnvironmentsAndApprovers.ps1 -PAT "..." -Organization "..." -ProjectName "MyProject" -CsvFileName "tech_environments_q3.csv"`
 
 ### Complete Execution Example:
 
@@ -85,10 +90,10 @@ cd path/to/your/project
 cd path/to/your/project
 
 # Run with required parameters
-.\List-AzDevOpsEnvironmentsAndApprovers.ps1 -PAT "xxxxPATxxxx" -Organization "MyOrganization"
+.\List-AzDevOpsEnvironmentsAndApprovers.ps1 -PAT "xxxxPATxxxx" -Organization "MyOrganization" -ProjectName "MyProject"
 
 # Run with a custom CSV filename
-.\List-AzDevOpsEnvironmentsAndApprovers.ps1 -PAT "xxxxPATxxxx" -Organization "MyOrganization" -CsvFileName "Technology_Environments_Q3.csv"
+.\List-AzDevOpsEnvironmentsAndApprovers.ps1 -PAT "xxxxPATxxxx" -Organization "MyOrganization" -ProjectName "MyProject" -CsvFileName "Technology_Environments_Q3.csv"
 ```
 
 ## 5. Script Output
@@ -101,7 +106,7 @@ cd path/to/your/project
 *   **CSV File**:
     *   A CSV file is generated in the `reports/` folder at the repository root.
     *   **CSV Columns**:
-        *   `TeamProjectName`: Azure DevOps project name being analyzed (currently fixed to "Gerencia_Tecnologia" in the script).
+        *   `TeamProjectName`: Azure DevOps project name being analyzed.
         *   `EnvironmentId`: Numeric environment ID.
         *   `EnvironmentName`: Environment name.
         *   `ApplicationID`: Application ID extracted from `EnvironmentName` (if applicable, otherwise "N/A").
@@ -121,10 +126,13 @@ cd path/to/your/project
 
 *   **Error 404 (Not Found)**:
     *   Verify that the `-Organization` name is correct.
-    *   The script is currently set to look for the "Gerencia_Tecnologia" project. If this project doesn't exist or is misspelled in the script, it could cause errors (although the script now gets the project ID dynamically, an incorrect name will fail at this initial step).
+    *   Verify that the `-ProjectName` exists in your organization and you have access to it.
+    *   Check for any typos in both the organization and project names.
 
-*   **"Could not retrieve Project ID for Gerencia_Tecnologia..."**:
-    *   Ensure that the project name "Gerencia_Tecnologia" is correct and exists in the specified organization. The script depends on this name to start.
+*   **"Could not retrieve Project ID..."**:
+    *   Ensure that the project name exists in the specified organization.
+    *   Verify that you have sufficient permissions to access the project.
+    *   Check if the project name matches exactly (case-sensitive).
 
 *   **Script doesn't create `reports/` folder or doesn't save CSV**:
     *   Verify that the script has write permissions in the repository root folder.
@@ -132,16 +140,16 @@ cd path/to/your/project
 
 *   **Few or no environments listed**:
     *   Confirm that the PAT has permissions to read environments from the specified project.
-    *   Verify that the "Gerencia_Tecnologia" project actually has configured environments.
+    *   Verify that the project actually has configured environments.
+    *   Check if you have the necessary permissions to view the environments.
 
 ## 7. Additional Considerations
 
-*   **Fixed Project**: Currently, the script is configured to analyze only the project named "Gerencia_Tecnologia". To analyze a different project, you'll need to modify the `$uriProjectLookup` variable within the script.
-    ```powershell
-    # Around line 18
-    $uriProjectLookup = $UriOrganization + "_apis/projects/YOUR_OTHER_PROJECT?api-version=6.0"
-    ```
+*   **API Versions**: The script uses Azure DevOps API versions 6.0 for project lookup, 7.1 for environments, and 7.2-preview.1 for environment checks. These versions are tested and stable as of 2024.
+
 *   **Rate Limiting**: For organizations with a large number of environments or approvers, Azure DevOps might apply rate limiting. The script includes small delays (`Start-Sleep`) to mitigate this, but for very large volumes, you might need to adjust these delays or implement more sophisticated retry logic for HTTP 429 (Too Many Requests) error codes.
+
+*   **Performance**: The script implements pagination to handle large numbers of environments efficiently. For very large projects, the execution might take several minutes.
 
 ---
 
